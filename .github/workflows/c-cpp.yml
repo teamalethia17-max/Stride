@@ -1,5 +1,5 @@
 
-name: C/C++ CI
+name: Stride CI
 
 on:
   push:
@@ -11,18 +11,18 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure CMake
+      - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build Stride
+      - name: Build
         run: cmake --build build --parallel 2
 
-      - name: Run tests
+      - name: Test
         run: ctest --test-dir build --output-on-failure
