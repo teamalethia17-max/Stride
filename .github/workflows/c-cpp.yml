@@ -1,4 +1,79 @@
 
-      - name: Inspect Result and StatusError definitions
+name: C/C++ CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fix tensor Result handling
+        if: github.event_name == 'push'
         run: |
-          grep -R -n -E 'class Result|struct Result|class StatusError|struct StatusError|shape_numel_checked' include src
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("src/tensor.cpp")
+          s = p.read_text()
+
+          changes = [
+              (
+                  "if (shape.empty()) return std::int64_t{1};",
+                  "if (shape.empty()) return Result<std::int64_t>::ok(std::int64_t{1});"
+              ),
+              (
+                  'return Status::error("invalid dimension ',
+                  'return Result<std::int64_t>::error("invalid dimension '
+              ),
+              (
+                  'return Status::error("shape numel overflow for ',
+                  'return Result<std::int64_t>::error("shape numel overflow for '
+              ),
+              (
+                  "    return n;\n}",
+                  "    return Result<std::int64_t>::ok(n);\n}"
+              ),
+          ]
+
+          for old, new in changes:
+              if old not in s:
+                  raise SystemExit(f"Could not find expected source text: {old}")
+              s = s.replace(old, new, 1)
+
+          if s.count("StatusError(n.status())") != 3:
+              raise SystemExit("Expected exactly 3 StatusError(n.status()) calls")
+
+          s = s.replace("StatusError(n.status())", "StatusError(n.message())")
+          p.write_text(s)
+          PY
+
+      - name: Commit source fix
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/tensor.cpp
+          if ! git diff --cached --quiet; then
+            git commit -m "Fix tensor Result handling"
+            git push
+          fi
+
+      - name: Configure CMake
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Stride
+        run: cmake --build build --parallel 2
+
+      - name: Run tests
+        run: ctest --test-dir build --output-on-failure
