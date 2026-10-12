@@ -21,14 +21,7 @@ endif()
 add_library(stride_core
   src/tensor.cpp
   src/ops.cpp
-  src/attention.cpp
-  src/model_config.cpp
-  src/json.cpp
-  src/gguf.cpp
-  src/tokenizer.cpp
-  src/sampler.cpp
-  src/model.cpp
-  src/model_loader.cpp
+  src/test_model.cpp
 )
 target_include_directories(stride_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -64,5 +57,6 @@ stride_add_test(test_ops)
 
 add_test(NAME cli_help COMMAND stride --help)
 add_test(NAME cli_version COMMAND stride --version)
+add_test(NAME cli_test_model COMMAND stride test-model)
 
 install(TARGETS stride RUNTIME DESTINATION bin)
