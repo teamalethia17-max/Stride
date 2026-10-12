@@ -29,14 +29,14 @@ std::int64_t dtype_size(DType dtype) {
 }
 
 Result<std::int64_t> shape_numel_checked(const Shape& shape) {
-    if (shape.empty()) return std::int64_t{1};
+    if (shape.empty()) return Result<std::int64_t>::ok(std::int64_t{1});
     std::int64_t n = 1;
     for (std::int64_t d : shape) {
-        if (d <= 0) return Status::error("invalid dimension " + std::to_string(d) + " in shape " + shape_str(shape));
-        if (n > (std::numeric_limits<std::int64_t>::max() / d)) return Status::error("shape numel overflow for " + shape_str(shape));
+        if (d <= 0) return Result<std::int64_t>::error("invalid dimension " + std::to_string(d) + " in shape " + shape_str(shape));
+        if (n > (std::numeric_limits<std::int64_t>::max() / d)) return Result<std::int64_t>::error("shape numel overflow for " + shape_str(shape));
         n *= d;
     }
-    return n;
+    return Result<std::int64_t>::ok(n);
 }
 
 float f16_to_f32(std::uint16_t h) {
@@ -81,14 +81,14 @@ std::uint16_t f32_to_f16(float value) {
 Tensor::Tensor(Shape shape, DType dtype) : shape_(std::move(shape)), dtype_(dtype) {
     if (dtype != DType::F32) throw StatusError("Tensor compute storage is f32; convert other dtypes on load");
     auto n = shape_numel_checked(shape_);
-    if (!n) throw StatusError(n.status());
+    if (!n) throw StatusError(n.message());
     numel_ = n.value();
     storage_ = std::make_shared<std::vector<float>>(static_cast<std::size_t>(numel_), 0.0f);
 }
 
 Tensor Tensor::from_f32(Shape shape, std::vector<float> values) {
     auto n = shape_numel_checked(shape);
-    if (!n) throw StatusError(n.status());
+    if (!n) throw StatusError(n.message());
     if (static_cast<std::int64_t>(values.size()) != n.value()) {
         throw StatusError("from_f32: shape " + shape_str(shape) + " needs " + std::to_string(n.value()) + " values, got " + std::to_string(values.size()));
     }
@@ -148,7 +148,7 @@ const float& Tensor::at(std::int64_t r, std::int64_t c) const {
 
 Tensor Tensor::view(Shape new_shape) const {
     auto n = shape_numel_checked(new_shape);
-    if (!n) throw StatusError(n.status());
+    if (!n) throw StatusError(n.message());
     if (n.value() != numel_) throw StatusError("view size mismatch: " + shape_str(shape_) + " -> " + shape_str(new_shape));
     Tensor t;
     t.shape_ = std::move(new_shape);
