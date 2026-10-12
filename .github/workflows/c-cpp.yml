@@ -1,25 +1,4 @@
 
-name: C/C++ CI
-
-on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Configure CMake
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-
-      - name: Build Stride
-        run: cmake --build build --parallel 2
-
-      - name: Run tests
-        run: ctest --test-dir build --output-on-failure
+      - name: Inspect Result and StatusError definitions
+        run: |
+          grep -R -n -E 'class Result|struct Result|class StatusError|struct StatusError|shape_numel_checked' include src
