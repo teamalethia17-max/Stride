@@ -1,13 +1,13 @@
 
-#include "stride/tensor.hpp"
+#pragma once
 
-#include <algorithm>
-#include <cmath>
-#include <cstring>
-#include <limits>
-#include <stdexcept>
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <span>
+#include <string>
 #include <utility>
-
+#include <vector>
 namespace stride {
 
 std::int64_t dtype_size(DType dtype) {
